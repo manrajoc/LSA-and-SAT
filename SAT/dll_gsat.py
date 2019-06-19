@@ -170,7 +170,7 @@ if __name__ == "__main__":
         quit(""" Incorrect option for algorithm! \nPlease use either "gsat" or "dll" """)
     
 
-    for m in range(int(n/2), int(8*n), int(n/2)):
+    for m in range(int(n/4), 8*n+1, int(n/4)):
 
         inputs = [cnf(k, m, n) for i in range(cases)]
 

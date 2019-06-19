@@ -78,7 +78,7 @@ if __name__ == "__main__":
     y2 = []
 
     failure = 0
-    for m in range(int(n/4), 10*n+1, int(n/4)):
+    for m in range(int(n/4), 8*n+1, int(n/4)):
         total_solvable = 0
         total = j
         avg_flips = 0
@@ -91,8 +91,7 @@ if __name__ == "__main__":
                 calls.append(call_time)
                 total_solvable += solvable
 
-        print(median(calls))
-        print(int((10*m) / n), "% Done")
+        print(m/n)
 
         x.append(m/n)
         y1.append(total_solvable/total)

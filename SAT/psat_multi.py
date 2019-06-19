@@ -80,7 +80,7 @@ if __name__ == "__main__":
     y2 = []
 
     workers = Pool(processes = 12)
-    for m in range(int(n/4), 10*n+1, int(n/4)):
+    for m in range(int(n/4), 8*n+1, int(n/4)):
         total = j
         avg_flips = 0
         calls = []
@@ -90,8 +90,7 @@ if __name__ == "__main__":
         solvable, dummy = reduce(lambda x, y: ((x[0] + y[0]), x[0]), output)
         calls = list(map(lambda t: t[1], output))
 
-        print(median(calls))
-        print(int((10*m) / n), "% Done")
+        print(m/n)
 
         x.append(m/n)
         y1.append(solvable/total)
