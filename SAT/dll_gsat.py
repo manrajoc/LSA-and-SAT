@@ -1,12 +1,12 @@
 # imports
 
 from random import sample, choice
-from pysat.solvers import Glucose3
 from sys import argv
 from multiprocessing import Pool
 from time import time
 from functools import reduce
 from matplotlib import pyplot as plt
+from copy import deepcopy
 
 # func defs
 
@@ -20,6 +20,9 @@ def cnf(k, m, n):
         clauses.append(s)
 
     return clauses
+
+
+# GSAT --------------------------------------------------------------------------------------------
 
 def gsat(clauses, max_flips, max_restarts, n):
     
@@ -59,6 +62,7 @@ def resolve(clauses, model):
 
     return r_cnf
 
+
 def optimal_flip(clauses, model):
 
     flip_scores = []
@@ -79,9 +83,16 @@ def optimal_flip(clauses, model):
 
     return model
 
-# DLL ---------------------------------------------------------------------
+
+def gsat_auxi(c):
+    return gsat(c, 7*n, 2*n, n)
+
+
+#--------------------------------------------------------------------------------------------------
+# DLL ---------------------------------------------------------------------------------------------
 
 def dll(clauses):
+    clauses = deepcopy(clauses)
     
     if len(clauses) == 0:
         return True
@@ -96,50 +107,86 @@ def dll(clauses):
 
     if len(unit_clauses) > 0:
         literal = choice(unit_clauses)[0]
-        pass
+        return dll(simplify(clauses, literal))
+
+    vs = []
+    for clause in clauses:
+        for literal in clause:
+            vs.append(literal)
+    v = choice(vs)
+
+    if dll(simplify(clauses, v)):
+        return True
+    else:
+        return dll(simplify(clauses, -v))
 
 
 def simplify(clauses, literal):
+    result = deepcopy(clauses)
+    r_c = []
+    r_l = []
 
-    for clause in clauses:
+    for i, clause in enumerate(clauses):
         if literal in clause:
-            clauses.remove(clause)
+            r_c.append(i)
+        elif -literal in clause:
+            r_l.append(i)
 
-        if -literal in clause:
-            clause.remove(-literal)
+    r_c = r_c[::-1]
+    r_l = r_l[::-1]
 
-    return clauses
+    for i in r_l:
+        result[i].remove(-literal)
+    for i in r_c:
+        del result[i]
 
-# -------------------------------------------------------------------------
+    return result
+
+
+# -------------------------------------------------------------------------------------------------
 
 # driver
-def gsat_auxi(c):
-    return gsat(c, 7*n, 2*n, n)
 
+""" if __name__ == "__main__":
+
+    c = [[1, 2, 3], [-1, 2, -3], [2], [-1, -2, -3]]
+
+    print(dll(c)) """
 
 if __name__ == "__main__":
-    cases, n = [int(v) for v in argv[1:]]
-    workers = Pool(processes = 12)
+    algo = argv[1]
+    k, n, cases = [int(i) for i in argv[2:]]
+    workers = Pool(processes = 6)
     x = []
     y1 = []
     y2 = []
 
-    for m in range(int(n/2), int(6*n), int(n/2)):
 
-        input = [cnf(3, m, n) for i in range(cases)]
-
-        start = time()
-        output = workers.map(gsat_auxi, input)
-        y2.append(time() - start)
-
-        y1.append(reduce(lambda x, y: x + y, output)/cases)
-        x.append(m/n)
-        
-        print((m/n))
-
+    if algo == "gsat":
+        algo_fn = gsat_auxi
+    elif algo == "dll":
+        algo_fn = dll
+    else:
+        quit(""" Incorrect option for algorithm! \nPlease use either "gsat" or "dll" """)
     
 
-# Plotting via matplotlib
+    for m in range(int(n/2), int(8*n), int(n/2)):
+
+        inputs = [cnf(k, m, n) for i in range(cases)]
+
+        start_time = time()
+        output = workers.map(algo_fn, inputs)
+        call_time = time() - start_time
+
+        solvable = reduce(lambda x, y: x+y, output)
+
+        y1.append(solvable / cases)
+        y2.append(call_time)
+        x.append(m/n)
+
+        print(m/n)
+
+    # Plotting via matplotlib
     fig,ax = plt.subplots(nrows=1, ncols=2, figsize=(25, 10))
     plt.subplots_adjust(wspace = 0.3, hspace = 0.3)
     ax[0].grid(b=True, which='major', color='#666666', linestyle='-')
@@ -154,11 +201,11 @@ if __name__ == "__main__":
     ax[0].set_ylabel("Probability")
     ax[1].set_title("Runtime")
     ax[1].set_xlabel("Clause/Symbol Ratio or m/n")
-    ax[1].set_ylabel("runtime in microseconds")
+    ax[1].set_ylabel("Runtime(s)")
 
     ax[0].plot(x, y1, label = "Probability", marker = 'o')
     ax[0].plot([4.3, 4.3], [0, 1], label = "X = 4.3", ls = '--', color = 'red')
-    ax[1].plot(x, y2, label = "Runtime in μs", marker = 'o')
+    ax[1].plot(x, y2, label = "Runtime in seconds", marker = 'o')
 
     ax[0].legend()
     ax[1].legend()
