@@ -14,30 +14,31 @@ class logistic_2p(object):
         self.theta_log = [np.copy(self.theta)]
 
 
-    def NEWTON(self):
-        def del_ab(item):
-            H = self.__item_hessian__(item)
-            G = np.array([[self.__A__(item)],
-                          [self.__B__(item)]])
+    def describe(self):
+        print("\n\nModel Description :\n")
+        print("\t\ta\tb")
+        for item in range(self.data.shape[1]):
+            a = round(self.a[item], 3)
+            b = round(self.b[item], 3)
+            a = "%.3f" % a
+            b = "%.3f" % b
+            if float(a) >= 0:
+                a = " " + a
+            if float(b) >= 0:
+                b = " " + b
+            print("Item {}\t|  {}  {}".format(item+1, a, b))
 
-            return -1 * np.matmul(np.linalg.inv(H), G)
-        del_a = np.vectorize(lambda i: del_ab(i)[0])
-        del_b = np.vectorize(lambda i: del_ab(i)[1])
-        del_th = np.vectorize(lambda j: -1 * np.reciprocal(self.__dTHdthk__(j)) * self.__TH__(j))
-        nItems = self.data.shape[1]
-        nSubs = self.data.shape[0]
-        newtonCycles = 3
+        print("\n")
+        print("\t\t    Theta   Std. Error")
+        for subject in range(self.data.shape[0]):
+            std_error = round((-1 * np.reciprocal(self.__dTHdthk__(subject))), 3)
+            std_error = "%.3f" % std_error
+            val = round(self.theta[subject], 3)
+            val = "%.3f" % val
+            if float(val) >= 0:
+                val = " " + val
 
-        for bCycle in range(5):
-            for nCyc in range(newtonCycles):
-                self.a = self.a + del_a(np.arange(nItems))
-                self.b = self.b + del_b(np.arange(nItems))
-            self.a_log.append(self.a)
-            self.b_log.append(self.b)
-
-            for nCyc in range(newtonCycles):
-                self.theta = self.theta + del_th(np.arange(nSubs))
-            self.theta_log.append(self.theta)
+            print("Subject {}\t|  {}   {}".format(subject+1, val, std_error))
 
 
     def GA(self, lmbda, item_error = 1e-2, subject_error = 1e-1): # Checked
